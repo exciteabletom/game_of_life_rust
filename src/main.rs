@@ -10,7 +10,7 @@ fn main() {
     let mut grid: Grid = string_to_vec(grid_data);
 
     pprint_grid(&grid);
-    tick_grid(&mut grid);
+    grid = tick_grid(&grid);
     pprint_grid(&grid)
 }
 
@@ -69,34 +69,44 @@ fn string_to_vec(grid_data: String) -> Grid {
     grid
 }
 
-fn tick_grid(grid: &mut Grid) {
-    // This copy of the grid is readonly
-    let grid_cpy = grid.clone();
+fn tick_grid(grid: &Grid) -> Grid {
+    let mut future: Grid = vec![vec![false; grid[0].len()]; grid.len()];
 
-    for (row_index, row) in grid_cpy.iter().enumerate() {
+    for (row_index, row) in grid.iter().enumerate() {
         for (index, live) in row.iter().enumerate() {
+
             let mut live_neighbours: u8 = 0;
-            for dx in -1i64..1 {
-                for dy in -1i64..1 {
-                    // This check prevents "index out of bounds" panic
-                    // TODO: Is there a cleaner way to do this without messy casts to i64?
-                    if row_index as i64 + dy > (grid_cpy.len() as i64 - 1)
-                        || index as i64 + dx > (row.len() as i64 - 1)
-                        || row_index as i64 + dy < 0
-                        || index as i64 + dx < 0
+
+            for row_offset in [-1, 0, 1].iter() {
+                for index_offset in [-1, 0, 1].iter() {
+
+                    let offset_row = row_index as i64 + row_offset;
+                    let offset_index = index as i64 + index_offset;
+
+                    if offset_row < (grid.len() as i64)
+                        && offset_index < (row.len() as i64)
+                        && offset_row > 0
+                        && offset_index > 0
                     {
-                        continue;
-                    }
-                    if grid_cpy[(row_index as i64 + dy) as usize][(index as i64 + dx) as usize] {
-                        live_neighbours += 1
+                        if grid[offset_row as usize][offset_index as usize] == true {
+                            live_neighbours += 1
+                        }
                     }
                 }
             }
-            if *live && ! (2..3).contains(&live_neighbours) {
-                grid[row_index][index] = false
+
+            if *live {
+                live_neighbours -= 1;
+            }
+
+            if *live && live_neighbours != 2 && live_neighbours != 3 {
+                future[row_index][index] = false;
             } else if !*live && live_neighbours == 3 {
-                grid[row_index][index] = true
+                future[row_index][index] = true;
+            } else {
+                future[row_index][index] = *live;
             }
         }
     }
+    future
 }
