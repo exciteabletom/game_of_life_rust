@@ -1,7 +1,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::time::Duration;
 use std::vec::Vec;
+use std::thread::sleep;
 
 type Grid = Vec<Vec<bool>>;
 
@@ -9,9 +11,11 @@ fn main() {
     let grid_data = read_file(); // Eventually this data will be entered through a UI
     let mut grid: Grid = string_to_vec(grid_data);
 
-    pprint_grid(&grid);
-    grid = tick_grid(&grid);
-    pprint_grid(&grid)
+    loop {
+        grid = tick_grid(&grid);
+        pprint_grid(&grid);
+        sleep(Duration::from_secs(1));
+    }
 }
 
 fn pprint_grid(grid: &Grid) {
@@ -51,9 +55,9 @@ fn string_to_vec(grid_data: String) -> Grid {
         let length = grid.len();
         if c == '\n' {
             grid.push(vec![]);
-        } else if c == '0' {
+        } else if c == 'O' {
             grid[length - 1].push(false);
-        } else if c == '1' {
+        } else if c == 'X' {
             grid[length - 1].push(true);
         } else {
             panic!("Unknown character '{}' in Grid file", c);
@@ -61,8 +65,11 @@ fn string_to_vec(grid_data: String) -> Grid {
     }
 
     let length = grid[0].len();
+    grid.truncate(grid.len() - 1);
+
     for v in &grid {
         if v.len() != length {
+            println!("{:?}", v);
             panic!("All rows must be of equal length!");
         }
     }
